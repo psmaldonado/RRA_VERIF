@@ -1,0 +1,17 @@
+
+
+path_ensemble='/exports/jruiz/EXPERIMENTS/FORECAST_CONTROL40M_MEMNC/trajectories/2008082012';
+
+ens_size=40;
+
+
+figure
+hold on
+
+for iens=1:ens_size
+    
+   load([]); 
+   
+    
+    
+end

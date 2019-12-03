@@ -1,0 +1,21 @@
+#!/bin/bash
+
+#---- Fecha de inicializacion:
+IY=2018
+IM=11
+ID=10
+IH=00
+#----------
+
+# necesitas el camino de entrada: a partir del BASEDIR asume un path adentro, revisalo:
+
+export BASEDIR=/home/devel/EXP/FCST_MOD/
+# necesitas el camino para las figuras:
+export PLOTPATH=$BASEDIR/HIST/POST/PLOT/${IY}${IM}${ID}_${IH}0000/
+
+# hf=horas de pronostico final, hfi=horas de pronostico inicial
+ncl y=${IY} m=${IM} d=${ID} h=${IH} hf=24 hfi=0 read_imerg_differentdays.ncl
+
+# numeracion de los miembros inicial (mini) y final (mfin), nrows=cantidad de filas para el grafico de los ensambles
+ncl y=${IY} m=${IM} d=${ID} h=${IH} hf=24 hfi=0 mini=00 mfin=19 nrows=4 read_npp_imerg_ens_differentdays.ncl
+
