@@ -29,7 +29,7 @@ import collections
 import numpy as np
 import sys
 from exceptions import MissingOptionalDependency
-from preprocessing import ens_stats
+import ens_stats
 from scipy.ndimage.filters import uniform_filter
 
 try:
@@ -46,8 +46,8 @@ def intensity_scale_3d(X_f, X_o, name, thrs, scales=None, ensemble=False, wavele
     ----------
     X_f : array_like
         Array of shape (l, k, m, n) containing the forecast field.
-        l = forecast to be averaged
-        k = ensemble memebers
+        l = forecasts to average
+        k = ensemble members
         m, n = latitude, longitude
     X_o : array_like
         Array of shape (l, m, n) containing the verification observation field.
@@ -225,12 +225,8 @@ def intensity_scale_accum(intscale, X_f, X_o):
             binary_mse_accum(intscale[thr], X_f, X_o)
 
         elif name.lower() == "fss":
-            if intscale["ensemble"]:
-               X_ff = ens_stats.excprob(X_f, thr, ignore_nan=False)
-            else:
-               X_ff = X_f.copy()
             for j, scale in enumerate(scales):
-                fss_accum(intscale[thr][scale], X_ff, X_o)
+                fss_accum(intscale[thr][scale], X_f, X_o)
                 
 
     if scales is None:
@@ -599,7 +595,7 @@ def fss_accum(fss, X_f, X_o):
     X_o : array_like
         Array of shape (m, n) containing the observation field.
     """
-    if len(X_f.shape) != 2 or len(X_o.shape) != 2 or X_f.shape != X_o.shape:
+    if not fss["ensemble"] and (len(X_f.shape) != 2 or len(X_o.shape) != 2 or X_f.shape != X_o.shape):
         message = "X_f and X_o must be two-dimensional arrays"
         message += " having the same shape"
         raise ValueError(message)
@@ -609,14 +605,13 @@ def fss_accum(fss, X_f, X_o):
 
     X_f = X_f.copy()
 
+    # Convert to binary fields with the given intensity threshold
+    I_o = (X_o >= fss["thr"]).astype(float)
     if fss["ensemble"]:
-       I_f = (X_f > 0).astype(float)
+       I_f = ens_stats.excprob(X_f, fss["thr"], ignore_nan=False)
     else:
        X_f[~np.isfinite(X_f)] = fss["thr"] - 1
        I_f = (X_f >= fss["thr"]).astype(float)
-
-    # Convert to binary fields with the given intensity threshold
-    I_o = (X_o >= fss["thr"]).astype(float)
 
     # Compute fractions of pixels above the threshold within a square
     # neighboring area by applying a 2D moving average to the binary fields
