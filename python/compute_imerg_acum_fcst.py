@@ -13,8 +13,10 @@ import datetime as dt
 
 INITIME = '20181109'        #Initial time
 ENDTIME = '20181219'        #Final time
-ACUM = 6                    #Period of accumulation in hours
+ACUM = 24                    #Period of accumulation in hours
 OBSFREQ = 30                #Observation frequency in minutes
+INIACUM = 6
+ENDACUM = 30
 THRESHOLDS = [1, 5, 10, 25] #Precipitation threshold to compute probability
 FCST_INITS = ['06']#, '12']   #Fcst initializations in UTC (Empty list to use all available)
 FCSTLENGTH = 36             #Fcst length in hours
@@ -34,6 +36,11 @@ start = time.time()
 # Set default value for FCST_INITS
 if not FCST_INITS:
    FCST_INITS = ['00', '03','06', '12', '15', '18', '21']
+
+if INIACUM is None:
+   INIACUM = 0
+if ENDACUM is None:
+   ENDACUM = FCSTLENTGH
 
 # Get list of directories in DATADIR
 dirs = [subdir[0].split('/')[-1] for subdir in sorted(os.walk(OUTDIR))][1:]
@@ -56,9 +63,11 @@ for date in common.datespan(inidate, enddate+delta, delta):
       dirname = ctime + '_' + init + 'F'
       if dirname in dirs:
          
-         acum_times = list(np.arange(0, FCSTLENGTH+ACUM, int(FCSTLENGTH/ACUM)))
+         acum_times = list(np.arange(INIACUM, ENDACUM+ACUM, ACUM))
          acum_dates = [date + dt.timedelta(hours=int(init)) + dt.timedelta(hours=int(i)) for i in acum_times]
          acum_fcsts = ['FC' + str(i).zfill(2)  for i in acum_times][1:]
+
+         print(acum_times, acum_dates, acum_fcsts)
 
          #Get list of files for the ACUM period
          for idate, adate in enumerate(acum_dates[:-1]):

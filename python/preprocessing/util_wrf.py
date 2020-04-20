@@ -62,3 +62,30 @@ def wrf_2_imerg(data, from_grid, to_grid):
 
    return interp 
 
+
+def get_param_mems(ensemble):
+    '''
+    Basado en la configuracion del RRA donde hay 9 grupos de parametrizaciones.
+    Se descartan los ultimos 6 miembros para que cada grupo tenga la misma cantidad de miembros
+    '''
+    nmem = ensemble.shape[0]-6
+    out = dict()
+    tmp = np.zeros((9, int(nmem/9), ensemble.shape[1], ensemble.shape[2]))
+    igroup = 0
+    newmem = 0
+    for imem in range(nmem):
+        tmp[igroup, newmem ,  :, :] = ensemble[imem, :, :]
+
+        if imem == 8 or imem == 17 or imem == 26 or imem == 35 or imem == 44 :
+            igroup = 0
+            newmem += 1 
+        else:
+            igroup += 1
+
+    for igroup in range(9):
+       group = str(igroup).zfill(2)
+       out[group] = tmp[igroup, :, :, :]
+
+    return out
+
+

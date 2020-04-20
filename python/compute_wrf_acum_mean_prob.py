@@ -17,8 +17,10 @@ import datetime as dt
 
 INITIME = '20181109'        #Initial time
 ENDTIME = '20181219'        #Final time
-MODEL = 'gfs'               #Experiment: wrf, gfs (noda)
-ACUM = 6                    #Period of accumulation in hours
+MODEL = 'wrf'               #Experiment: wrf, gfs (noda)
+ACUM = 24                   #Period of accumulation in hours
+INIACUM = 6 
+ENDACUM = 30
 THRESHOLDS = [1, 5, 10, 25] #Precipitation threshold to compute probability
 FCST_INITS = ['06']#, '12']   #Fcst initializations in UTC (Empty list to use all available)
 FCSTLENGTH = 36             #Fcst length in hours
@@ -34,6 +36,10 @@ start = time.time()
 # Set default value for FCST_INITS
 if not FCST_INITS:
    FCST_INITS = ['00', '03','06', '12', '15', '18', '21']
+if INIACUM is None:
+   INIACUM = 0
+if ENDACUM is None:
+   ENDACUM = FCSTLENTGH
 
 # Load IMERG lat/lon data
 imerg = np.load(basedir + '/data/imerg_lat_lon.npz', mmap_mode='r')
@@ -60,43 +66,51 @@ for date in common.datespan(inidate, enddate+delta, delta):
    for init in FCST_INITS:
       print(init)
 
-      old = 0
       # Check if target directory is present 
       dirname = ctime + '_' + init + 'F'
       if dirname in dirs:
          
          #Get list of files for the ACUM period
-         acum_times = list(np.arange(0, FCSTLENGTH+ACUM, int(FCSTLENGTH/ACUM)))
+         acum_times = list(np.arange(INIACUM, ENDACUM+ACUM, ACUM))
          acum_pattern = ['*FC' + str(i).zfill(2) + '.nc' for i in acum_times]
+
+         print(acum_times, acum_pattern)
+
          path = DATADIR + '/' + dirname
          filelist = [ut.find_by_pattern(i, path) for i in acum_pattern]
+         filelist = [x for x in filelist if x]
 
+         print(filelist)
+
+         _, _, old = utwrf.read_wrf_pp(filelist[0])
          # Loop over files
-         for filepath in filelist:
-     
+         for filepath in filelist[1:]:
+            print(filepath) 
             # Read data
             _, _, pp = utwrf.read_wrf_pp(filepath)
 
-            if 'FC00' not in filepath:
-               # Compute accumulate
-               acum = pp[:, :, :] - old[:, :, :] 
+            # Compute accumulate
+            acum = pp[:, :, :] - old[:, :, :] 
 
-               # Compute ensemble mean accumulate
-               mean = ens.mean(acum)
+            # Compute ensemble mean accumulate
+            mean = ens.mean(acum)
 
-               # Interpolate to IMERG grid
-               acum_interp = utwrf.wrf_2_imerg(acum, from_grid, to_grid)
-               mean_interp = utwrf.wrf_2_imerg(mean, from_grid, to_grid)
+            # Interpolate to IMERG grid
+            acum_interp = utwrf.wrf_2_imerg(acum, from_grid, to_grid)
+            mean_interp = utwrf.wrf_2_imerg(mean, from_grid, to_grid)
+            #acum_interp = acum
+            #mean_interp = mean
 
-               # Compute probability exceeding threshold
-               prob = ens.excprob(acum_interp, THRESHOLDS)
+            # Compute probability exceeding threshold
+            prob = ens.excprob(acum_interp, THRESHOLDS)
 
-               # Write data to npz file
-               pathout = basedir + '/data/' + DOMAIN + '_' + str(ACUM) + 'hr_accumulated/' + dirname
-               os.makedirs(pathout, exist_ok=True)
-               fileout = pathout + '/' + MODEL + '_' + dirname[:-1] + '_' + filepath.split('.')[1][-4:]
-               print('Writing file: ', fileout)
-               np.savez(fileout, lat=imerg['lat'], lon=imerg['lon'], pp=acum_interp, mean=mean_interp, prob=prob)
+            # Write data to npz file
+            pathout = basedir + '/data/' + DOMAIN + '_' + str(ACUM) + 'hr_accumulated/' + dirname
+            os.makedirs(pathout, exist_ok=True)
+            fileout = pathout + '/' + MODEL + '_' + dirname[:-1] + '_' + filepath.split('.')[1][-4:]
+            print('Writing file: ', fileout)
+            #np.savez(fileout, lat=imerg['lat'], lon=imerg['lon'], pp=acum_interp, mean=mean_interp, prob=prob)
+            np.savez(fileout, lat=imerg['lat'], lon=imerg['lon'], pp=acum_interp, mean=mean_interp, prob=prob)
 
             old = pp
 

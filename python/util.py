@@ -30,7 +30,7 @@ def init_dict(key1, key2=None, key3=None):
 
    for key_1 in key1:
       if key2 is None:
-         out[key_1] = defaultdict(list)
+         out[key_1] = list()
       else:
          for key_2 in key2:
             if key3 is None:
@@ -43,7 +43,10 @@ def init_dict(key1, key2=None, key3=None):
 def get_order_files(key1, key2, model, path, order='lead', date_init=None):
 
    # Initialize output variable
-   data = init_dict(key1, key2)
+   if order == 'param':
+      data = init_dict(key1)
+   else:
+      data = init_dict(key1, key2)
 
    # Find all files for each forecast lead
    if order == 'date' and date_init != None:
@@ -69,6 +72,8 @@ def get_order_files(key1, key2, model, path, order='lead', date_init=None):
             data[init][hour].append(path)
          elif order == 'date':
             data[lead][date].append(path)
+         elif order == 'param':
+            data[lead].append(path)
 
    return data
 

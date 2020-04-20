@@ -79,8 +79,9 @@ def find_by_date(
 
         timestamps.append(curdate)
 
-    if all(filename is None for filename in filenames):
-        raise IOError("no input data found in %s" % root_path)
+    #if all(filename is None for filename in filenames):
+        #print('No file')
+        #raise IOError("no input data found in %s" % root_path)
 
     if (num_prev_files + num_next_files) > 0:
         return filenames[::-1], timestamps[::-1]
@@ -92,11 +93,12 @@ def _find_matching_filename(
     date, root_path, path_fmt, fn_pattern, fn_ext, silent=False
 ):
     path = _generate_path(date, root_path, path_fmt)
+    print(path)
     fn = None
 
     if os.path.exists(path):
         fn = datetime.strftime(date, fn_pattern) + "." + fn_ext
-
+        print(fn)
         # test for wildcars
         if "?" in fn:
             filenames = os.listdir(path)
